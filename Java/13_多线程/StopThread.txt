@@ -1,0 +1,39 @@
+package java14;
+
+class Stop implements Runnable {
+    private boolean flag = true;
+
+    @Override
+    public synchronized void run() {  // 不要忘了synchronized，因为wait()必须定义在同步代码块中
+        while (flag) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                System.out.println(Thread.currentThread().getName() + " ... " + e);
+                flag = false;
+            }
+            System.out.println(Thread.currentThread().getName() + " ... " + "&$(*#&$#%&)#");
+        }
+    }
+}
+
+public class StopThread {
+    public static void main(String[] args) {
+        Stop s = new Stop();
+
+        Thread t0 = new Thread(s);
+        Thread t1 = new Thread(s);
+
+        t0.start();
+        t1.start();
+
+        for (int i = 0; i < 50; i++) {
+            System.out.println(Thread.currentThread().getClass() + " Running ...");
+        }
+
+        t0.interrupt();  // t0中断
+        t1.interrupt();  // t1中断
+        System.out.println("Over!");
+    }
+
+}

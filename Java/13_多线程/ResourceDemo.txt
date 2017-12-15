@@ -1,0 +1,101 @@
+package java14;
+
+
+class Resource {
+    private String name;
+    private String sex;
+    private boolean flag;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
+    }
+
+    public boolean isFlag() {
+        return flag;
+    }
+
+    public void overturnFlag() {
+        flag = !flag;
+    }
+}
+
+
+class Input implements Runnable {
+    private Resource r;
+
+    public Input(Resource r) {
+        this.r = r;
+    }
+
+    @Override
+    public void run() {
+        int x = 0;
+        while (true) {
+            synchronized (r) {
+                if (r.isFlag())
+                    try {r.wait();} catch (InterruptedException e) {}
+                if (x == 0) {
+                    r.setName("Mike");
+                    r.setSex("Man");
+                } else {
+                    r.setName("丽丽");
+                    r.setSex("女女女女女女女女");
+                }
+                r.overturnFlag();
+                r.notify();
+            }
+            x = (x+1) % 2;
+        }
+    }
+}
+
+
+class Output implements Runnable {
+    private Resource r;
+
+    public Output(Resource r) {
+        this.r = r;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            synchronized (r) {
+                if (!r.isFlag())
+                    try {r.wait();} catch (InterruptedException e) {}
+                System.out.println(r.getName() + "......" + r.getSex());
+                r.overturnFlag();
+                r.notify();
+            }
+        }
+    }
+}
+
+
+public class ResourceDemo {
+    public static void main(String[] args) {
+        Resource r = new Resource();
+
+        Input in = new Input(r);
+        Output out = new Output(r);
+
+        Thread t1 = new Thread(in);
+        Thread t2 = new Thread(out);
+
+        t1.start();
+        t2.start();
+    }
+
+}

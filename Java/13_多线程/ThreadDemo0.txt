@@ -1,0 +1,58 @@
+package java13;
+
+import java.util.concurrent.TimeUnit;
+
+class Demo extends Thread {
+
+    String name;
+
+    public Demo(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void run() {
+        for (int i = 0; i < 10; i++) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("I'm " + name);
+        }
+    }
+}
+
+public class ThreadDemo {
+
+    public static void main(String[] args) {
+        Demo d1 = new Demo("111111111111111");
+        Demo d2 = new Demo("2");
+        d1.start();
+        d2.start();
+    }
+
+}
+
+/* Output
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+I'm 111111111111111
+I'm 2
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+I'm 2
+I'm 111111111111111
+*/
