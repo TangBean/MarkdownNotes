@@ -1,8 +1,8 @@
 # Pyspider实现知乎热搜的爬取
 
-
-
 这篇笔记记录了使用 Pyspider 爬取知乎热搜问题的过程。
+
+
 
 ## Pyspider的安装及常用命令
 
@@ -171,3 +171,6 @@ data_obj = json.loads(response.content.decode('utf8'))
 ```
 
 然后我们看看这个 json 串的格式，从里面取出来我们想要的数据就可以了！
+
+详细实现：[zhihu_hot.py](./zhihu_hot.py).
+
