@@ -12,7 +12,7 @@
 
 最后 1 个过程其实和计算机网络没啥关系了，所以我们主要研究前 4 个过程。
 
-首先是 [DNS 解析]()，DNS 解析的过程就是寻找哪台机器上有你需要资源的过程。当然目前国内访问量较高的网站的架构不会如此的简单，它们会使用 [CDN 网络加速技术]()。反正最终的目的都只有一个，就是将我们输入的 URL 地址转换为 IP 地址。
+首先是 [DNS 解析](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#dns-%E8%A7%A3%E6%9E%90-1)，DNS 解析的过程就是寻找哪台机器上有你需要资源的过程。当然目前国内访问量较高的网站的架构不会如此的简单，它们会使用 [CDN 网络加速技术](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#cdncontent-distribute-network)。反正最终的目的都只有一个，就是将我们输入的 URL 地址转换为 IP 地址。
 
 得到目标的 IP 地址之后，我们就要向他请求主页了，请求从我们的电脑到达服务器的流程主要如下图所示：
 
