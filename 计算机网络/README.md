@@ -22,20 +22,20 @@
 
 对于 HTTP 协议，我们有以下零散的知识点需要掌握一下：
 
-- [HTTP 长连接、短连接？]()
-- [HTTP 1.1 与 HTTP 1.0 的区别？]()
-- [HTTP、HTTPS 区别？]()
+- [HTTP 长连接、短连接？](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#http-%E9%95%BF%E8%BF%9E%E6%8E%A5%E7%9F%AD%E8%BF%9E%E6%8E%A5)
+- [HTTP 1.1 与 HTTP 1.0 的区别？](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#http-11-%E4%B8%8E-http-10-%E7%9A%84%E5%8C%BA%E5%88%AB)
+- [HTTP、HTTPS 区别？](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#httphttps-%E5%8C%BA%E5%88%AB)
 
-接下来是 TCP 协议，TCP 是一种面向连接、确保数据在端到端间可靠传输的协议。它在传输前是需要先建立一条可靠的传输链路的，然后让数据在这条链路上流动，完成传输。简单来说就是，TCP 在想尽各种办法保证数据传输的可靠性，为了可靠性 TCP 会这样进行数据传输：（TCP 的传输方式与 [TCP 报头]()中的一些字段息息相关，最好先了解一下）
+接下来是 TCP 协议，TCP 是一种面向连接、确保数据在端到端间可靠传输的协议。它在传输前是需要先建立一条可靠的传输链路的，然后让数据在这条链路上流动，完成传输。简单来说就是，TCP 在想尽各种办法保证数据传输的可靠性，为了可靠性 TCP 会这样进行数据传输：（TCP 的传输方式与 [TCP 报头](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#tcp-%E6%8A%A5%E5%A4%B4%E7%BB%93%E6%9E%84)中的一些字段息息相关，最好先了解一下）
 
-- [三次握手建立连接]()；
+- [三次握手建立连接](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B)；
 - 对发出的每一个字节进行编号确认，校验每一个数据包的有效性，在出现超时进行重传；
-- 通过[流量控制]()（通过[滑动窗口协议]()实现）和[拥塞控制]()（[慢启动和拥塞避免]()、[快重传和快恢复]()）等机制，避免网络状况恶化而影响数据传输；
-- [四次挥手断开连接]()。
+- 通过[流量控制](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E6%B5%81%E9%87%8F%E6%8E%A7%E5%88%B6)（通过[滑动窗口协议](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E4%BB%80%E4%B9%88%E6%98%AF-tcp-%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3)实现）和[拥塞控制](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6)（[慢启动和拥塞避免](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E6%85%A2%E5%90%AF%E5%8A%A8%E5%92%8C%E6%8B%A5%E5%A1%9E%E9%81%BF%E5%85%8D)、[快重传和快恢复](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E5%BF%AB%E9%87%8D%E4%BC%A0%E5%92%8C%E5%BF%AB%E6%81%A2%E5%A4%8D)）等机制，避免网络状况恶化而影响数据传输；
+- [四次挥手断开连接](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B)。
 
-> 补充 1：传输层不只有个 TCP 协议，还有一个 UDP 协议也很常见，它们的区别为：[TCP 与 UDP 的区别？]()
+> 补充 1：传输层不只有个 TCP 协议，还有一个 UDP 协议也很常见，它们的区别为：[TCP 与 UDP 的区别？](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#tcp-%E4%B8%8E-udp-%E7%9A%84%E5%8C%BA%E5%88%AB)
 
-> 补充 2：[如果客户端不断的发送请求连接会怎样？]()
+> 补充 2：[如果客户端不断的发送请求连接会怎样？](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E5%A6%82%E6%9E%9C%E5%AE%A2%E6%88%B7%E7%AB%AF%E4%B8%8D%E6%96%AD%E7%9A%84%E5%8F%91%E9%80%81%E8%AF%B7%E6%B1%82%E8%BF%9E%E6%8E%A5%E4%BC%9A%E6%80%8E%E6%A0%B7)
 >
 > 答：会发生 DDos 攻击，这个攻击的产生原因与 TCP 连接建立的三次握手息息相关。
 
@@ -45,7 +45,7 @@ HTTP 应答报文有个叫状态码的东西，这个有好多，以下列出几
 
 - 100：请求者继续提出请求
 - 200：请求成功
-- [301 & 302：重定向]()
+- [301 & 302：重定向](https://github.com/TangBean/MarkdownNotes/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E4%BB%80%E4%B9%88%E6%98%AF-301302-%E9%87%8D%E5%AE%9A%E5%90%91)
 - 4xx：请求错误（客户端的问题）
 - 5xx：服务器错误
 
