@@ -62,7 +62,7 @@ Hash 是一个 string 类型的 field 和 value 的映射表，又名字典，ha
 
 ```json
 key=JavaUser293847
-value={  // value 可以是一个 JSON 字符串
+value={
     "id": 1,
     "name": "SnailClimb",
     "age": 22,
@@ -234,7 +234,21 @@ typedef struct zskiplist {
 
 ## Redis 设置过期时间
 
+Redis 中有个设置时间过期的功能，即对存储在 Redis 数据库中的值可以设置一个过期时间。作为一个缓存数据库，这是非常实用的。如我们一般项目中的 token 或者一些登录信息，尤其是短信验证码都是有时间限制的，按照传统的数据库处理方式，一般都是自己判断过期，这样无疑会严重影响项目性能。
 
+对于这种数据，我们 set key 的时候，都可以给一个 expire time，就是过期时间，通过过期时间我们可以指定这个 key 可以存活的时间。这样就不需要我们再在应用中手动判断这个 key 是否过期，而是将这个任务交给 Redis 来做。
+
+> 过期时间设置方式：`EXPIRE <key> <ttl>`
+
+我们是不管了，那么 Redis 到底是怎么删除这个过期数据的呢？
+
+Redis 删除过期数据的方式： **定期删除 + 惰性删除** 。
+
+- **定期删除：** Redis 默认是每隔 100ms 就随机抽取一些设置了过期时间的 key，检查其是否过期，如果过期就删除。注意这里是随机抽取的。
+	- 为什么要随机呢？你想一想假如 Redis 存了几十万个 key ，如果每隔 100ms 就遍历所有的设置过期时间的 key 的话，CPU怕是要废了……
+- **惰性删除：** 定期删除可能会导致很多过期 key 到了时间并没有被删除掉，所以就有了惰性删除。惰性删除就是：假如你的过期 key，靠定期删除没有被删除掉，还停留在内存里，这时候你的系统去查了一下那个 key，Redis 会先检查下数据过期没，如果过期了，就会被 Redis 删除掉。
+
+但是仅仅通过设置过期时间还是有问题的。我们想一下：如果定期删除漏掉了很多过期 key，然后你也没及时去查，也就没走惰性删除，此时会怎么样？当然会有好多过期的 key 堆积在内存中了，如果大量过期 key 堆积在内存里，是导致 Redis 内存块耗尽的。那么怎么解决这个问题呢？这就要依靠 Redis 的内存淘汰机制了。
 
 
 
@@ -242,7 +256,27 @@ typedef struct zskiplist {
 
 即 MySQL 里有 2000w 数据，Redis 中只存 20w 的数据，那么如何保证 Redis 中的数据都是热点数据呢？
 
+Redis 提供了如下 8 种数据淘汰策略：
 
+| 策略                   | 描述                                                         |
+| ---------------------- | ------------------------------------------------------------ |
+| `volatile-lru`         | 从已设置过期时间的数据集（server.db[i].expires）中挑选最近最少使用的数据淘汰 |
+| `allkeys-lru`          | 从数据集（server.db[i].dict）中挑选最近最少使用的数据淘汰    |
+| `volatile-lfu`         | 从已设置过期时间的数据集（server.db[i].expires）中挑选使用频率最小的数据淘汰 |
+| `allkeys-lfu`          | 从数据集（server.db[i].dict）中挑选挑选使用频率最小的数据淘汰 |
+| `volatile-random`      | 从已设置过期时间的数据集（server.db[i].expires）中挑选任意选择数据淘汰 |
+| `allkeys-random`       | 从数据集（server.db[i].dict）中挑选任意选择数据淘汰          |
+| `volatile-ttl`         | 从已设置过期时间的数据集（server.db[i].expires）中挑选将要过期的数据淘汰 |
+| `noeviction` (Default) | 禁止驱逐数据，也就是说当内存不足以容纳新写入数据时，新写入操作会报错 |
+
+设置方式：在配置文件 redis.conf 中写入 `maxmemory-policy 策略名`。
+
+> **记忆：**
+>
+> - LRU：Least Recently Used
+> - LFU：Least Frequently Used
+> - volatile：已设置过期时间的数据集（server.db[i].expires）
+> - allkeys：数据集（server.db[i].dict）
 
 
 
@@ -256,7 +290,29 @@ typedef struct zskiplist {
 
 ## Redis 事务
 
+Redis 通过 `MULTI`、`EXEC`、`WATCH ` 等命令来实现事务功能。事务提供了一种将多个命令请求打包，然后一次性、按顺序地执行多个命令的机制，并且在事务执行期间，服务器不会中断事务而改去执行其他客户端的命令请求，它会将事务中的所有命令都执行完毕，然后才去处理其他客户端的命令请求。
 
+一个事务从开始到结束会经历以下三个阶段：
+
+- 事务开始
+- 命令入队
+- 事务执行
+
+流程如下：
+
+```shell
+MULTI                # 事务开始
+SET "name" "xxx"     # 放到事务队列的 index 0 处
+GET "name"           # 放到事务队列的 index 1 处
+SET "author" "Bean"  # 放到事务队列的 index 2 处
+GET "author"         # 放到事务队列的 index 3 处
+EXEC                 # 从 index 0 到 index 3 执行事务队列中的命令，并将 4 个命令的结果返回客户端
+```
+
+那么 `WATCH` 命令是干嘛的呢？它是一个乐观锁，可以在 `EXEC` 命令执行前，监视任意数量的数据库键，在 `EXEC` 命令执行时，只要有一个被监视的键发生了变化，服务器就会拒绝执行事务，并返回：`(nil)` 表示事务执行失败。
+
+在传统的关系式数据库中，常常用 ACID 性质来检验事务功能的可靠性和安全性。在 Redis 中，事务总是具有原子性
+（Atomicity)、一致性（Consistency）和隔离性（Isolation），并且当 Redis 运行在某种特定的持久化模式下时，事务也具有持久性（Durability）。
 
 
 
