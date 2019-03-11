@@ -306,9 +306,29 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 - 如果需要调整，不要超过 0.75，否则会显著增加冲突；
 - 如果使用太小的负载因子，也要同时调整容量，否则可能会频繁扩容，影响性能。
 
-那么为什么要树化呢？
+**那么为什么哈希数组的一个位置挂的链表的长度超过 8 要树化呢？**
 
 这本质上是一个安全问题，我们知道如果同一个哈希值对应位置的链表太长，会极大的影响性能，而在现实世界中，构造哈希冲突的数据并不是十分复杂的事情，恶意代码可以利用这些数据与服务端进行交互，会导致服务端 CPU 大量占用，形成哈希碰撞拒绝服务攻击。
+
+### TreeSet
+
+TreeSet 的底层实现是一颗红黑树，那么什么是红黑树呢？
+
+红黑树是一颗自平衡的二叉查找树，它从根节点到叶子节点的最长路径不会超过最短路径的 2 倍。除此之外，它还具有如下 5 个特点：
+
+- 节点分为红色或黑色。
+- 根节点一定是黑色的。
+- 每个叶子节点一定是黑色的 null 节点。
+- 每个红色节点的两个子节点都是黑色，即从每个叶子到根的所有路径上不能有两个连续的红色节点（但黑节点的子节点可以还是黑节点，就红节点事多……）。
+- 从任一节点到其每个叶子的所有路径都包含相同数目的黑色节点。
+
+红黑树在插入和删除节点的时候，可能破坏以上 5 条规则，一旦规则被破坏，红黑树主要依靠以下 3 个操作来恢复：
+
+- 变色
+- 逆时针旋转
+- 顺时针旋转
+
+红黑树的插入与删除详见：[教你透彻了解红黑树](https://github.com/julycoding/The-Art-Of-Programming-By-July/blob/master/ebook/zh/03.01.md)。
 
 
 
@@ -384,30 +404,46 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 ### 注意
 
 - **关于 put 操作：**
-	- 是否需要扩容
-		- 在插入元素前判断是否需要扩容，
-		- 比 HashMap 的插入元素后判断是否需要扩容要好，因为可以插入元素后，Map 扩容，之后不再有新的元素插入，Map就进行了一次无效的扩容
-	- 如何扩容
-	  - 先创建一个容量是原来的2倍的数组，然后将原数组中的元素进行再散列后插入新数组中
-	  - 为了高效，ConcurrentHashMap 只对某个 segment 进行扩容
+  - 是否需要扩容
+  	- 在插入元素前判断是否需要扩容，
+  	- 比 HashMap 的插入元素后判断是否需要扩容要好，因为可以插入元素后，Map 扩容，之后不再有新的元素插入，Map就进行了一次无效的扩容
+  - 如何扩容
+    - 先创建一个容量是原来的2倍的数组，然后将原数组中的元素进行再散列后插入新数组中
+    - 为了高效，ConcurrentHashMap 只对某个 segment 进行扩容
 - **关于 size 操作：**
-	- 存在问题：如果不进行同步，只是计算所有 Segment 维护区域的 size 总和，那么在计算的过程中，可能有新的元素 put 进来，导致结果不准确，但如果对所有的 Segment 加锁，代价又过高。
-	- 解决方法：重试机制，通过获取两次来试图获取 size 的可靠值，如果没有监控到发生变化，即 `Segment.modCount` 没有变化，就直接返回，否则获取锁进行操作。
+  - 存在问题：如果不进行同步，只是计算所有 Segment 维护区域的 size 总和，那么在计算的过程中，可能有新的元素 put 进来，导致结果不准确，但如果对所有的 Segment 加锁，代价又过高。
+  - 解决方法：重试机制，通过获取两次来试图获取 size 的可靠值，如果没有监控到发生变化，即 `Segment.modCount` 没有变化，就直接返回，否则获取锁进行操作。
+
+### JDK 1.8 的改变
+
+ConcurrentHashMap 取消了 Segment 分段锁，采用 CAS 和 synchronized 来保证并发安全。数据结构跟 HashMap1.8 的结构类似，数组 + 链表 / 红黑二叉树。
+
+synchronized 只锁定当前链表或红黑二叉树的首节点，这样只要 hash 不冲突，就不会产生并发，效率又提升 N 倍。
 
 
 
 
 ## LinkedHashMap
 
+简单的来说，LinkedHashMap 就是在 HashMap 的基础上加了一条双向链表用来维护 LinkedHashMap 中元素的插入顺序。
 
+`LinkedHashMap extends HashMap` 且 `LinkedHashMap.Entry<K,V> extends HashMap.Node<K,V>`，它们的结构图如下：
 
+`LinkedHashMap.Entry<K,V>` 的结构：
 
+![LinkedHashMap的Entry.png](./pic/LinkedHashMap的Entry.png)
+
+`LinkedHashMap` 的结构：
+
+![LinkedHashMap结构.png](./pic/LinkedHashMap结构.png)
 
 
 
 ## HashSet
 
+HashSet 底层就是基于 HashMap 实现的。add 的元素会被放在 HashMap 的放 key 的地方，HashMap 放 value 的地方放了一个 `private static final Object PRESENT = new Object();`。
 
+除了 `clone()` 方法、`writeObject()` 方法、`readObject()` 方法是 HashSet 自己不得不实现之外，其他方法都是直接调用 HashMap 中的方法实现的。
 
 
 
