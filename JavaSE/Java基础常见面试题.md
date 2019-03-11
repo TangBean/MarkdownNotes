@@ -103,14 +103,25 @@ public static void main(String[] args) {
 
 ## 接口和抽象类的区别
 
-1. 接口的方法默认是 public，所有方法在接口中不能有实现（Java 8 开始接口方法可以有默认实现），抽象类可以有非抽象的方法；
+### 区别
+
+1. 接口的方法默认是 public abstract，所有方法在接口中不能有实现（Java 8 开始接口方法可以有默认实现），抽象类可以有非抽象的方法；
 2. 接口中的实例变量默认是 final 类型的，而抽象类中则不一定；
 3. 一个类可以实现多个接口，但最多只能实现一个抽象类；
 4. 一个类实现接口的话要实现接口的所有方法，而抽象类不一定；
 5. 接口不能用 new 实例化，但可以声明，但是必须引用一个实现该接口的对象；
-6. 从设计层面来说，抽象是对类的抽象，是一种模板设计，接口是行为的抽象，是一种行为的规范。
+6. 抽象类里可以有构造方法，而接口内不能有构造方法；
+7. 从设计层面来说，抽象是对类的抽象，是一种模板设计，接口是行为的抽象，是一种行为的规范。
 
 > 补充：在 JDK8 中，接口也可以定义静态方法，可以直接用接口名调用。**实现类是不可以调用的。如果同时实现两个接口，接口中定义了一样的默认方法，必须重写，不然会报错。**
+
+### Java 抽象类可以实现接口吗？它需要实现接口的所有方法吗？
+
+可以，并且因为它是抽象的，所以它不需要实现所有的方法。
+
+一个好的做法是：提供一个抽象基类以及一个接口来声明类型。
+
+举个例子就是，`java.util.List` 接口和相应的 `java.util.AbstractList` 抽象类。因为 AbstractList 实现了所有的通用方法，具体的实现像 LinkedList 和 ArrayList 不受实现所有方法的负担，它们可以直接实现 List 接口。这对两方面都很好，你可以利用接口声明类型的优点和抽象类的灵活性在一个地方实现共同的行为。
 
 
 
@@ -261,85 +272,136 @@ AbstractStringBuilder 是 StringBuilder 与StringBuffer 的公共父类，定义
 
 ## Java 序列化
 
+序列化是指 **把 Java 对象字节序列化的过程**，就是说将原本保存在 **内存** 中的对象，以字节序列的形式，保存到 **硬盘 (或数据库等)** 中。当需要使用时，再 **反序列化** 恢复到内存中使用。
+
 ### 如何实现序列化和反序列化
 
+只要对象实现了 Serializable 接口，这个对象就可以通过如下方法进行序列化和反序列化 ( **注意：** Serializable 接口仅仅是一个标记接口，**里面没有任何方法** )：
 
+- **序列化：**
+
+    ```java
+    // 创建一个 OutputStream 流并将其封装在一个 ObjectOutputStream 对象内。
+    ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("worm.out"));
+    // 调用 ObjectOutputStream 对象的 writeObject() 方法，即可将对象 wa 序列化。
+    out.writeObject(wa);
+    ```
+
+- **反序列化：**
+
+    ```java
+    // 创建一个 InputStream 流并将其封装在一个 ObjectInputStream 对象内。
+    ObjectInputStream in = new ObjectInputStream(new FileInputStream("worm.out"));
+    // 调用 ObjectInputStream 对象的 readObject() 方法，可获得一个向上转型的 Object 对象引用，然后将获得的 Object 对象向下转型即可。
+    Worm newWa = (Worm) in.readObject();
+    ```
+
+- **注意：**
+
+    - 将一个对象从它的序列化状态恢复出来所需要的必要条件：保证 Java JVM 能够找到相关的 .class 文件，否则会抛出 ClassNotFoundException 异常。
+
+    - 被 static 修饰的字段是无法被序列化的，因为它根本就不保存在对象中，而是保存在方法区中，如果想要序列化 static 值，必须自己手动去实现，并手动调用方法，一般会在类中加上 `serializeStaticState(ObjectOutputStream os)` 和 `deserializeStaticState(ObjectInputStream os)` 这两个方法用来序列化 static 字段。
+
+        ```java
+        class Square implements Serializable {
+            private static int color = RED;
+            public static void serializeStaticState(ObjectOutputStream os) throws IOException {
+                os.writeInt(color); // 在这里
+            }
+            public static void deserializeStaticState(ObjectInputStream os) throws IOException {
+                color = os.readInt();
+            }
+        }
+        
+        // 在序列化和反序列化 Square 对象时的时候需要手动调用：
+        // 序列化：
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("square.out"));
+        Square.serializeStaticState(out); // 在 writeObject 前先把 static 变量的值写道 Output 流中
+        out.writeObject(sq);
+        // 反序列化：
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream("square.out"));
+        Square.deserializeStaticState(in); // 在 readObject 前先把 static 变量的值从 Input 流中取出来
+        Square newSq = (Square) in.readObject();
+        ```
+
+    - 另外要注意安全问题，序列化也会将 private 数据保存下来，必要的时候可以把敏感数据用 transient 关键字修饰，防止其被序列化。
+
+        - 一旦变量被 transient 修饰，变量将不再是对象持久化的一部分，在对象反序列化后，transient 修饰的变量被设为初始值，即 int 型数据的值为 0，对象型数据为 null。
+
+另一种实现序列化和反序列化的方法：实现 ExternalSerializable 接口。
+
+### 序列化的控制：Externalizable 接口
+
+Externalizable 接口继承自 Serializable 接口，同时增加了两个方法：`writeExternal()`和`readExternal()`，这两个方法会在序列化和反序列化还原的过程中被自动调用，我们可以在`writeExternal()`中将来自对象的重要信息写入，然后在`readExternal()`中恢复数据。(默认是不写入任何成员对象的)
+
+- **对比 transient 关键字：**
+	- Externalizable 接口：选择要进行序列化的字段进行序列化操作。
+	- transient 关键字：选择不要进行序列化的字段取消序列化操作。
+- **对比 Serializable 接口：**
+	- Externalizable 接口：会调用普通的默认构造器，因此必须有 public 的默认构造器，否则会抛出异常。相当于新 new 了一个对象，然后把`writeExternal()`中进行序列化的成员变量进行重新赋值。
+	- Serializable 接口：对象完全以它存储的二进制位为基础来构造，不调用构造器。
+
+### Externalizable 接口的替代方法
+
+Externalizable 接口使用起来较为麻烦，我们可以实现 Serializable 接口，并添加 (是"添加"，既不是"覆盖"也不是"实现") 如下两个方法：
+
+```java
+private void writeObject(ObjectOutputStream stream) throws IOException { ... }
+private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException { ... }
+```
+
+ObjectOutputStream 和 ObjectInputStream 对象的 writeObject() 和 readObject() 方法会调用我们的对象的 writeObject() 和 readObject() 方法。
+
+**既然如此我们为什么不为这两个方法写个接口呢？因为这两个方法是 private 的，而接口中定义的东西都是默认 public 的，所以只能是"添加"这两个方法了。**
+
+在我们的 writeObject() 和 readObject() 方法中，可以调用 defaultWriteObject() 和 defaultReadObject() 方法来选择执行默认的 writeObject() 和 readObject() 方法，比较方便好用。**注意：** 如果我们打算使用默认机制写入对象的非 transient 部分，那么必须调用 defaultWriteObject() 作为 writeObject() 的第一个操作，调用 defaultReadObject() 作为 readObject() 的第一个操作。
 
 ### 常见的序列化协议
 
-
-
-
-
-## Java 多线程的三种方式及其区别
-
-
-
-
-
-
-
-## 什么是线程安全
-
-
-
-
-
-
-
-## 多线程如何进行信息交互
-
-
-
-
-
-
-
-## 多线程共用一个数据变量需要注意什么？
-
-
-
-
-
-
-
-## 线程池
-
-### 什么是线程池？
-
-
-
-### 如果让你设计一个动态大小的线程池，如何设计，有哪些方法？
-
-
-
-
-
-## Java 是否有内存泄露和内存溢出的风险
-
-
-
-
+- **XML：** XML是一种常用的序列化和反序列化协议，具有跨机器，跨语言等优点，并且可读性强。
+- **JSON：**
+	- 这种 Associative array 格式非常符合工程师对对象的理解。
+	- 它保持了XML的人眼可读（Human-readable）的优点。
+	- 相对于XML而言，序列化后的数据更加简洁。
+	- 它具备 Javascript 的先天性支持，所以被广泛应用于 Web browser 的应用常景中，是 Ajax 的事实标准协议。
+	- 与 XML 相比，其协议比较简单，解析速度比较快。
+	- 松散的  Associative array 使得其具有良好的可扩展性和兼容性。
 
 
 
 ## 异常
 
-### 常见异常分为哪两种
+![Throwable.png](./pic/Throwable.png)
 
-Exception 和 Error。
+### Throwable 类常用方法
 
-### 常见异常的基类以及常见的异常
+```java
+// 返回异常发生时的详细信息
+public string getMessage();
 
+// 返回异常发生时的简要描述
+public string toString();
 
+// 返回异常对象的本地化信息。使用 Throwable 的子类覆盖这个方法，可以声称本地化信息。如果子类没有覆盖该方法，则该方法返回的信息与 getMessage() 返回的结果相同
+public string getLocalizedMessage();
 
+// 在控制台上打印 Throwable 对象封装的异常信息
+// 这个的实现：printStackTrace(System.err);
+public void printStackTrace();
+```
 
+### 异常处理总结
 
-## Java 中的 NIO，BIO，AIO 分别是什么？
-
-
-
-
+- try 块：用于捕获异常。其后可接零个或多个 catch 块，如果没有 catch 块，则必须跟一个 finally 块。
+- catch 块：用于处理在 try 块捕获到的异常。
+- finally 块：无论是否捕获或处理异常，finally 块里的语句都会被执行。
+	- 当在 try 块或 catch 块中遇到 return 语句时，比如 `return a`，虚拟机会先将这个 return 的结果保存起来，假设现在 `a = 1`，finally 语句块将在方法返回之前被执行，然后再执行这个 return 语句，不过即使我们在 finally 块中将 a 的值改为了 2，这里 return 的还是 1。
+	- 不过如果在 finally 块中遇到了 return 语句，它就不管前面的 return 语句，真的 return 了。不过最好不要这么干，在 finally 块中写 return 是很糟糕的写法。
+	- 在以下 4 种特殊情况下，finally 块不会被执行或不会被从头到尾执行完：
+		- 在 finally 语句块中发生了异常。
+		- 在前面的代码中用了 `System.exit()` 退出程序。
+		- 程序所在的线程死亡。
+		- 关闭 CPU。
 
 
 
@@ -355,7 +417,35 @@ Exception 和 Error。
 
 
 
+### 泛型 `<?>` 与 `<T>` 的区别
 
+```java
+public static <T> void show1(List<T> list){
+    for (Object object : list) {
+    	System.out.println(object.toString());
+    }
+}
+public static void show2(List<?> list) {
+    for (Object object : list) {
+    	System.out.println(object);
+    }
+}
+public static void test(){
+    List<Student> list1 = new ArrayList<>();
+    list1.add(new Student("zhangsan",18,0));
+    list1.add(new Student("lisi",28,0));
+    list1.add(new Student("wangwu",24,1));
+    // 这里如果 add(new Teacher(...)); 就会报错，因为我们已经给 List 指定了数据类型为 Student
+    show1(list1);
+    System.out.println("************分割线**************");
+    // 这里我们并没有给 List 指定具体的数据类型，可以存放多种类型数据
+    List list2 = new ArrayList<>();
+    list2.add(new Student("zhaoliu",22,1));
+    list2.add(new Teacher("sunba",30,0));
+    // 从 show2 方法可以看出和 show1 的区别了，list2 存放了 Student 和 Teacher 两种类型，同样可以输出数据
+    show2(list2);
+}
+```
 
 
 
@@ -369,9 +459,9 @@ Exception 和 Error。
 
 ## Java 反射
 
+反射机制是在运行状态中，动态的创建对象、调用对象的方法等。这里主要通过我 Github 中的两个项目进行说明。
 
-
-
+首先是第一个项目 OnlineExecutor，这个项目在将客户端发来的源码文件动态编译为字节数组之后，会调用我们自己写的 HotSwapClassLoader 将 byte[] 加载为一个 Class 对象。这里的将 byte[] 加载为一个 Class 对象的过程需要破坏双亲委派模型，所以肯定不可能通过重写 findClass 方法来实现，通常应该通过 loadClass 方法来实现，不过 loadClass 方法的本质也是调用了
 
 
 
@@ -383,7 +473,21 @@ Exception 和 Error。
 
 
 
-## 为什么要实现内存模型？
+## Socket
+
+
+
+
+
+
+
+
+## Java 中的 NIO、BIO、AIO 分别是什么？
+
+
+
+
+
 
 
 

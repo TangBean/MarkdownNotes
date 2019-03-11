@@ -168,10 +168,12 @@ post 是新建资源，put 是更新资源。
 
 #### Servlet 生命周期
 
+![Servlet生命周期.png](./pic/Servlet生命周期.png)
+
 - 创建 Servlet 对象，通过服务器反射机制创建 Servlet 对象，第一次请求时才会创建；
-- 调用 Servlet 对象的 init() 方法，初始化 Servlet 的信息，init() 方法只会在创建后被调用一次；
-- 响应请求，调用 service() 或者是 doGet()，doPost() 方法来处理请求，这些方法是运行的在多线程状态下的；
-- 在长时间没有被调用或者是服务器关闭时，会调用 destroy() 方法来销毁 Servlet 对象。
+- 调用 Servlet 对象的 `init()` 方法，初始化 Servlet 的信息，`init()` 方法只会在创建后被调用一次；
+- 响应请求，调用 `service()` 或者是 `doGet()`，`doPost()` 方法来处理请求，这些方法是运行的在多线程状态下的；
+- 在长时间没有被调用或者是服务器关闭时，会调用 `destroy()` 方法来销毁 Servlet 对象。
 
 #### Servlet 是线程安全的吗？
 
