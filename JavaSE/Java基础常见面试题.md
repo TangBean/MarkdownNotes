@@ -461,7 +461,34 @@ public static void test(){
 
 反射机制是在运行状态中，动态的创建对象、调用对象的方法等。这里主要通过我 Github 中的两个项目进行说明。
 
-首先是第一个项目 OnlineExecutor，这个项目在将客户端发来的源码文件动态编译为字节数组之后，会调用我们自己写的 HotSwapClassLoader 将 byte[] 加载为一个 Class 对象。这里的将 byte[] 加载为一个 Class 对象的过程需要破坏双亲委派模型，所以肯定不可能通过重写 findClass 方法来实现，通常应该通过 loadClass 方法来实现，不过 loadClass 方法的本质也是调用了
+首先是第一个项目 OnlineExecutor，这个项目在将客户端发来的源码文件动态编译为字节数组之后，会调用我们自己写的 HotSwapClassLoader 将 byte[] 加载为一个 Class 对象。这里的将 byte[] 加载为一个 Class 对象的过程需要破坏双亲委派模型，所以肯定不可能通过重写 findClass 方法来实现，通常应该通过 loadClass 方法来实现，不过 loadClass 方法的本质也是调用了 defineClass 方法，将 byte[] 加载为一个 Class 对象的，所以我们直接又写了一个 `loadByte(byte[] classBytes)` 方法，方法里直接调用 defineClass 方法将 byte[] 加载为一个 Class 对象。得到了这个 Class 对象之后，我们就可以通过反射调用客户端发来的代码中的 main 方法了：
+
+```java
+HotSwapClassLoader classLoader = new HotSwapClassLoader();
+Class clazz = classLoader.loadByte(modifyBytes);
+try {
+    Method mainMethod = clazz.getMethod("main", new Class[] { String[].class });
+    mainMethod.invoke(null, new String[] { null });
+} catch (Exception e) {
+}
+```
+
+对于第二个项目 SimpleSpring，我们从配置文件中得到我们要在容器中装载的 Bean 的全类名，然后我们可以通过
+
+```java
+Class beanClass = Class.forName(beanInfo.getClassName());
+```
+
+获取到这个 bean 的 Class 对象，然后通过这个 Class 对象调用 `beanClass.newInstance();` 或者获取构造函数 constructor，然后通过 `constructor.newInstance(paramArgs);` 创建 bean 实例。
+
+通过以上分析可以发现，我们有以下两种方法可以获取一个类的 Class 对象，那么它们又有什么区别呢？
+
+- `Class.forName("全类名")`：
+	- 会对类进行初始化，也就是说类加载时会执行静态代码块；
+	- 同时使用的类加载器是调用 forName 方法的代码使用的类加载器。
+- `classLoader.loadClass()`：
+	- 只会装载或链接，只有在调用 newInstance 方法时才会执行静态代码块（类似懒加载）；
+	- 使用的类加载器是调用 loadClass 方法的类加载器。
 
 
 

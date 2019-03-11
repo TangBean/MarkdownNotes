@@ -447,7 +447,42 @@ HashSet 底层就是基于 HashMap 实现的。add 的元素会被放在 HashMap
 
 
 
+## 迭代器 Iterator
 
+对容器进行迭代操作时，我们要考虑它是不是会被其他的线程修改，如果是我们自己写代码，可以考虑通过如下方式对容器的迭代操作加锁：
+
+```java
+synchronized (vector) {
+    for (int i = 0; i < vector.size(); i++)
+        doSomething(vector.get(i));
+}
+```
+
+不过 Java 自己的同步容器类并没有考虑并发修改的问题，它主要采用了一种 **快速失败 (fail-fast)** 的方法，即一旦容器被其他线程修改，它就会抛出异常，例如 Vector 类，它的内部实现是这样的：
+
+```java
+synchronized (Vector.this) { // 类名.this：在内部类中，要用到外围类的 this 对象，使用“外围类名.this”
+    checkForComodification();	// 在进行 next 和 remove 操作前，会先检查以下容器是否被修改
+    ...
+}
+
+/* checkForComodification()方法 */
+final void checkForComodification() {
+    if (modCount != expectedModCount) // 在 Itr 的成员变量中有一个：int exceptedModCount = modCount;
+        throw new ConcurrentModificationException(); // 如果容器被修改了，modCount 会变
+}
+```
+
+因此，我们在调用 Vector 的如下方法时，要小心，因为它们会隐式的调用 Vector 的迭代操作。
+
+- toString
+- hashCode
+- equals
+- containsAll
+- removeAll
+- retainAll
+
+Iterator 的 **安全失败 (fail-safe)** 是基于对底层集合做拷贝实现的，因此，它不受源集合上修改的影响。
 
 
 
