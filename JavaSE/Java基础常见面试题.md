@@ -46,6 +46,12 @@
 
 通过以上两条，我们也能得出为什么重载是基于方法的静态分派实现的，重写是基于方法的动态分派实现的了。
 
+### Java 中为什么静态方法不能被重写？
+
+首先，static 方法的调用指令就与其他方法不一样，它是通过 invokestatic 指令调用的，所以是解析调用，也就是说，在编译阶段，就根据变量的静态类型确定好了要调用哪个方法，并把该方法的符号引用解析成了直接引用。
+
+重写是要基于方法的动态分派的，即在运行时，根据方法的实际类型决定要调用哪个方法，invokevirtual 指令会去操作数栈顶取出这个变量的实际对象，也就是变量的实际类型的对象，然后根据变量的实际类型对象去决定调用哪一个方法。
+
 
 
 ## 自动装箱与拆箱
@@ -407,15 +413,62 @@ public void printStackTrace();
 
 ## 匿名内部类是什么？如何访问在其外面定义的变量？
 
+内部类本身就是类的一个属性，与其他属性的定义方式一致，都是 `[访问控制符] [是否静态] [类型] [变量名]`。
 
+- `private static String str`
+- `private static class Inner {}`
 
+### 4 个分类
 
+- **成员内部类**：`private class InstanceInnerClass {}`
+	- 外部类和内部类互相可见，即使是 private 的属性也是可见的。**原因：**
+		- 编译器在内部类中偷偷摸摸的创建了包可见构造器，从而使外部类获得了私有内部类的创建权限，并偷偷传进去了一个外部类的 `this$0` 引用。
+		- 编译器在外部类中偷偷摸摸的创建了包可见的访问私有变量的静态方法，从而使内部类获得了外部类私有属性的访问权限。
+	- 不能有静态成员。
+- **静态内部类**：`static class StaticInnerClass {}`
+	- 只能访问外部类的静态成员，不能从嵌套类对象中访问非静态的外部类对象。因为用它的时候可能根本不存在外部类对象。
+	- 如果内部类不需要与外围类有联系，就不需要拿到外围类的引用，这时可以把它声明为 static 的。
+	- 创建嵌套类对象不需要其外围类对象。
+	- 因为普通类的字段与方法只能放在类的外部层次上，所以普通内部类不能有 static 字段。
+- **匿名内部类**：`(new Thread() {}).start();`
+	- 匿名内部类因为没有类名，可知 **匿名内部类不能定义构造器，也不能定义任何静态成员、方法**。毕竟它就被用一下。
+	- 因为在创建匿名内部类的时候，会立即创建它的实例，可知 **匿名内部类不能是抽象类，必须实现接口或抽象父类的所有抽象方法**。
+	- 匿名内部类会 **继承一个父类** 或 **实现一个接口**，实现父类或接口中所有抽象方法，可以改写父类中的方法，添加自定义方法。
+	- 当匿名内部类和外部类有同名变量（方法）时，默认访问的是匿名内部类的变量（方法），要访问外部类的变量（方法）则需要加上外部类的类名。同时，匿名内部类访问的外部类成员变量或成员方法必须用 static 修饰，就是说，它是不持有外部类对象的引用的。
+- **局部内部类**：`class MethodClass1 {}`（方法中）
+	- 方法中的内部类没有访问修饰符， 即方法内部类对包围它的方法之外的任何东西都不可见。
+	- 方法内部类只能够访问该方法中的局部变量，所以也叫局部内部类。而且这些局部变量一定要是 final 修饰的常量。原因：
+		- 当 JVM 运行到需要创建 Inner 对象之后，传入 InnerClass 用到的方法局部变量可能已经被 GC 回收了。
+		- 所以编译器在 InnerClass 中创建了一个方法局部变量的备份；
+		- 如果 OutterClass 中的方法局部变量不停的在变化，内部类备份也需要跟着变化保持一致。所以，为了保持局部变量与局部内部类中备份域保持一致，编译器只能规定这些局部域必须是常量，一旦赋值不能再发生变化了。
+
+4 种内部类的最精简定义方式：
+
+```java
+public class OuterClass {
+    // 成员内部类
+    private class InstanceInnerClass {}
+
+    // 静态内部类
+    static class StaticInnerClass {}
+
+    public static void main(String[] args) {
+        // 两个匿名内部类
+        (new Thread() {}).start();
+        (new Thread() {}).start();
+
+        // 两个方法内部类
+        class MethodClass1 {}
+        class MethodClass2 {}
+    }
+}
+```
+
+![内部类class文件.png](./pic/内部类class文件.png)
 
 
 
 ## 泛型
-
-
 
 ### 泛型 `<?>` 与 `<T>` 的区别
 
@@ -494,15 +547,175 @@ Class beanClass = Class.forName(beanInfo.getClassName());
 
 ## Java 动态代理
 
+动态代理是干啥的？增强对象的！并且是终极加强版的对象增强工具！为啥，请看下表：
 
+| **增强对象方式** | **被增强对象** | **增强内容** |
+| ---------------- | -------------- | ------------ |
+| 继承             | 固定           | 固定         |
+| 装饰者模式       | 不固定         | 固定         |
+| 动态代理         | 不固定         | 不固定       |
 
+通过上表可以看出，动态代理最为灵活！
 
+现在我们就要实现这个超强的对象加强机器，它就像一个有三个卡槽的对象加强机器一样，给它装配好合适的卡之后，它就能按你给它装配了什么卡生产出相应的增强对象出来，十分的灵活。如下图：
+
+![动态代理用处解释.png](./pic/动态代理用处解释.png)
+
+之后只要我们创建一个 ProxyFactory factory，然后在里面放好 targetObject (这个是必须有的)，再放上 beforeAdvice 和 afterAdvice (这两个是可有可没有的，要根据对象加强的需要)，最后调用 factory.createProxy() 就能生产出来一个被加强的对象了。
+
+**需求分析：**
+
+我们有一个 Eat 接口，实现了这个接口的类都能吃饭，然后我们我们现在想要对所有实现这个接口的类的 eat() 方法进行加强，在吃之前要说：我开动啦，吃完之后要说：我吃饱啦。
+
+**实现**
+
+先准备 3 个接口和两个实现了 Eat 接口的类：
+
+```java
+public interface Eat {
+    public void eat();
+}
+
+public interface BeforeAdvice {
+    public void before();
+}
+
+public interface AfterAdvice {
+    public void after();
+}
+
+public class Man implements Eat {
+    @Override
+    public void eat() {
+        System.out.println("Man在吃饭...");
+    }
+}
+
+public class Animal implements Eat {
+    @Override
+    public void eat() {
+        System.out.println("Animal在吃饭...");
+    }
+}
+```
+
+然后我们就可以通过动态代理实现这样的一个对象加强器了：
+
+```java
+public class DynamicProxyFactory {
+    private Object targetObject;
+    private BeforeAdvice beforeAdvice;
+    private AfterAdvice afterAdvice;
+
+    public Object createProxy() {
+        // 类加载器比较好得到，用当前类的类加载器就行
+        ClassLoader loader = this.getClass().getClassLoader();
+
+        // 要实现的接口也很好得到，就是我们要加强的接口
+        Class[] interfaces = targetObject.getClass().getInterfaces();
+
+        // 处理器就是调用代理对象的方法时会执行的内容，除了个别类似 getClass() 这种方法，
+        // 其他的方法调用了并不会执行，而是执行 invoke 这个方法
+        // 所以我们要是想加强原方法只要让它在 invoke 里执行，再加上需要扩展的部分，就达到了增强的效果
+        InvocationHandler handle = new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                if (beforeAdvice != null) {
+                    beforeAdvice.before();
+                }
+                Object result = method.invoke(targetObject, args);
+                if (afterAdvice != null) {
+                    afterAdvice.after();
+                }
+                return result;
+            }
+        };
+
+        // 得到一个实现了interfaces中接口的类
+        // 这个方法需要三个参数：类加载器，要实现的接口，处理器
+        return Proxy.newProxyInstance(loader, interfaces, handle);
+    }
+
+    public Object getTargetObject() {
+        return targetObject;
+    }
+
+    public void setTargetObject(Object targetObject) {
+        this.targetObject = targetObject;
+    }
+
+    public BeforeAdvice getBeforeAdvice() {
+        return beforeAdvice;
+    }
+
+    public void setBeforeAdvice(BeforeAdvice beforeAdvice) {
+        this.beforeAdvice = beforeAdvice;
+    }
+
+    public AfterAdvice getAfterAdvice() {
+        return afterAdvice;
+    }
+
+    public void setAfterAdvice(AfterAdvice afterAdvice) {
+        this.afterAdvice = afterAdvice;
+    }
+}
+```
+
+这个 DynamicProxyFactory 的使用方法如下：
+
+```java
+// 创建工厂
+DynamicProxyFactory factory = new DynamicProxyFactory();
+
+// 设置工厂要进行增强的对象
+// factory.setTargetObject(new Man());
+factory.setTargetObject(new Animal());
+
+// 设置工厂要在原方法前进行的增强内容
+factory.setBeforeAdvice(new BeforeAdvice() {
+    @Override
+    public void before() {
+        System.out.println("我开动啦");
+    }
+});
+
+// 设置工厂要在原方法后进行的增强内容
+factory.setAfterAdvice(new AfterAdvice() {
+    @Override
+    public void after() {
+        System.out.println("我吃饱啦");
+    }
+});
+
+// 通过createProxy得到增强后的方法
+Eat proxyObject = (Eat) factory.createProxy();
+proxyObject.eat();
+```
 
 
 
 ## Socket
 
+- 为网络服务提供的一种机制。
+- 通信两端都有 Socket，就像港口。
+- 网络通信其实就是 Socket 间的通信。
+- 数据在两个 Socket 间通过 IO 传输。
 
+### UDP 协议
+
+发送端和接收端类：都是 `java.net.DatagramSocket`
+
+数据包类：`java.net.DatagramPacket`
+
+
+
+### TCP 协议
+
+发送端和接收端类：
+
+- 客户端：`java.net.Socket`
+- 服务端：`java.net.ServerSocket`
 
 
 
@@ -511,10 +724,13 @@ Class beanClass = Class.forName(beanInfo.getClassName());
 
 ## Java 中的 NIO、BIO、AIO 分别是什么？
 
+### I/O 模型分类
+
+- **同步阻塞 IO：** 用户进程在发起一个 IO 操作以后，必须等待 IO 操作的完成，只有当真正完成了 IO 操作以后，用户进程才能继续运行。Java 传统的 IO 模型属于此种方式。
+- **同步非阻塞 IO：** 用户进程发起一个 IO 操作以后边可返回做其它事情，但是用户进程需要时不时的询问 IO 操作是否就绪，这就要求用户进程不停的去轮询，从而引入不必要的 CPU 资源浪费。Java 的 NIO 就属于此种方式。
+- **异步阻塞 IO：** 此种方式下是指应用发起一个 IO 操作以后，不等待内核 IO 操作的完成，等内核完成 IO 操作以后会通知应用程序，这其实就是同步和异步最关键的区别，同步必须等待或者主动的去询问 IO 是否完成，那么为什么说是阻塞的呢？因为此时是通过 select 系统调用来完成的，而 select 函数本身的实现方式是阻塞的，而采用 select 函数有个好处就是它可以同时监听多个文件句柄，从而提高系统的并发性！
+- **异步非阻塞 IO：** 用户进程只需要发起一个 IO 操作然后立即返回，等 IO 操作真正的完成以后，应用程序会得到 IO 操作完成的通知，此时用户进程只需要对数据进行处理就好了，不需要进行实际的 IO 读写操作，因为真正的 IO 读取或者写入操作已经由内核完成了。
 
 
 
-
-
-
-
+参考：[深入分析 Java I/O 的工作机制](https://www.ibm.com/developerworks/cn/java/j-lo-javaio/index.html)
