@@ -1,6 +1,50 @@
 # Java 基础常见面试题
 
+<!-- TOC -->
 
+- [Java 基础常见面试题](#java-基础常见面试题)
+    - [面向对象和面向过程的区别？](#面向对象和面向过程的区别)
+    - [Java 的三个基本特性，在项目中那些地方用到多态](#java-的三个基本特性在项目中那些地方用到多态)
+    - [方法的重载和重写](#方法的重载和重写)
+        - [Java 中为什么静态方法不能被重写？](#java-中为什么静态方法不能被重写)
+    - [自动装箱与拆箱](#自动装箱与拆箱)
+    - [`==` 与 `equals`](#-与-equals)
+    - [接口和抽象类的区别](#接口和抽象类的区别)
+        - [区别](#区别)
+        - [Java 抽象类可以实现接口吗？它需要实现接口的所有方法吗？](#java-抽象类可以实现接口吗它需要实现接口的所有方法吗)
+    - [static 和 final 的区别和用途](#static-和-final-的区别和用途)
+        - [static](#static)
+        - [final](#final)
+    - [Object 类的常见方法总结](#object-类的常见方法总结)
+    - [String、StringBuffer、StringBuilder 以及对 String 不变性的理解](#stringstringbufferstringbuilder-以及对-string-不变性的理解)
+        - [可变性](#可变性)
+        - [线程安全性](#线程安全性)
+        - [性能](#性能)
+        - [对于三者使用的总结](#对于三者使用的总结)
+        - [String 不变性的理解](#string-不变性的理解)
+        - [String 有重写 Obiect 的 hashCode 和 toString 吗？](#string-有重写-obiect-的-hashcode-和-tostring-吗)
+    - [Java 序列化](#java-序列化)
+        - [如何实现序列化和反序列化](#如何实现序列化和反序列化)
+        - [序列化的控制：Externalizable 接口](#序列化的控制externalizable-接口)
+        - [Externalizable 接口的替代方法](#externalizable-接口的替代方法)
+        - [常见的序列化协议](#常见的序列化协议)
+    - [异常](#异常)
+        - [Throwable 类常用方法](#throwable-类常用方法)
+        - [异常处理总结](#异常处理总结)
+    - [匿名内部类是什么？如何访问在其外面定义的变量？](#匿名内部类是什么如何访问在其外面定义的变量)
+        - [4 个分类](#4-个分类)
+    - [泛型](#泛型)
+        - [泛型 `<?>` 与 `<T>` 的区别](#泛型--与-t-的区别)
+    - [Java 枚举类](#java-枚举类)
+    - [Java 反射](#java-反射)
+    - [Java 动态代理](#java-动态代理)
+    - [Socket](#socket)
+        - [UDP 协议](#udp-协议)
+        - [TCP 协议](#tcp-协议)
+    - [Java 中的 NIO、BIO、AIO 分别是什么？](#java-中的-niobioaio-分别是什么)
+        - [I/O 模型分类](#io-模型分类)
+
+<!-- /TOC -->
 
 ## 面向对象和面向过程的区别？
 
