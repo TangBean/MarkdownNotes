@@ -377,7 +377,7 @@ TreeSet 的底层实现是一颗红黑树，那么什么是红黑树呢？
 
 **ConcurrentHashMap 内部结构：**
 
-![ConcurrentHashMap内部结构.jpg](./Pic/ConcurrentHashMap内部结构.jpg)
+![ConcurrentHashMap内部结构.jpg](./pic/ConcurrentHashMap内部结构.jpg)
 
 - 在构造的时候，Segment 的数量由所谓的 concurrentcyLevel 决定，默认是 16；
 - Segment 是基于 ReentrantLock 的扩展实现的，在 put 的时候，会对修改的区域加锁。
