@@ -1,0 +1,31 @@
+在上一章使用django-admin.py startproject制作的mysite文件夹中，创建一个叫做views.py的空文件。这个Python模块将包含这一章的视图。 请留意，Django对于view.py的文件命名没有特别的要求，它不在乎这个文件叫什么。但是根据约定，把它命名成view.py是个好主意，这样有利于其他开发者读懂你的代码，正如你很容易的往下读懂本文。
+
+这里主要讲的是： 一个视图就是Python的一个函数。这个函数第一个参数的类型是HttpRequest；它返回一个HttpResponse实例。为了使一个Python的函数成为一个Django可识别的视图，它必须满足这两个条件。 （也有例外，但是我们稍后才会接触到。
+
+现在，如果你再运行：python manage.py runserver，你还将看到Django的欢迎页面，而看不到我们刚才写的Hello world显示页面。 那是因为我们的mysite项目还对hello视图一无所知。我们需要通过一个详细描述的URL来显式的告诉它并且激活这个视图。 （继续我们刚才类似发布静态HTML文件的例子。现在我们已经创建了HTML文件，但还没有把它上传至服务器的目录。）为了绑定视图函数和URL，我们使用URLconf。1
+
+URLconf 就像是 Django 所支撑网站的目录。 它的本质是 URL 模式以及要为该 URL 模式调用的视图函数之间的映射表。 你就是以这种方式告诉 Django，对于这个 URL 调用这段代码，对于那个 URL 调用那段代码。 例如，当用户访问/foo/时，调用视图函数foo_view()，这个视图函数存在于Python模块文件view.py中。7
+
+前一章中执行 django-admin.py startproject 时，该脚本会自动为你建了一份 URLconf（即 urls.py 文件）。 默认的urls.py会像下面这个样子：
+
+当前应该注意是 urlpatterns 变量， Django 期望能从 ROOT_URLCONF 模块中找到它。 该变量定义了 URL 以及用于处理这些 URL 的代码之间的映射关系。 默认情况下，URLconf 所有内容都被注释起来了——Django 应用程序还是白版一块。 （注：那是上一节中Django怎么知道显示欢迎页面的原因。 如果 URLconf 为空，Django 会认定你才创建好新项目，因此也就显示那种信息。3
+
+如果想在URLconf中加入URL和view，只需增加映射URL模式和view功能的Python tuple即可. 这里演示如何添加view中hello功能.
+
+简单来说，我们只是告诉 Django，所有指向 URL /hello/ 的请求都应由 hello 这个视图函数来处理。5
+
+Python 搜索路径
+
+Python 搜索路径 就是使用 import 语句时，Python 所查找的系统目录清单。
+
+举例来说，假定你将 Python 路径设置为 ['','/usr/lib/python2.4/site-packages','/home/username/djcode/'] 。如果执行代码 from foo import bar ，Python 将会首先在当前目录查找 foo.py 模块( Python 路径第一项的空字符串表示当前目录)。 如果文件不存在，Python将查找 /usr/lib/python2.4/site-packages/foo.py 文件。
+
+如果你想看Python搜索路径的值，运行Python交互解释器，然后输入
+
+另外需要注意的是，我们把hello视图函数作为一个对象传递，而不是调用它。 这是 Python (及其它动态语言的) 的一个重要特性： 函数是一级对象（first-class objects）， 也就是说你可以像传递其它变量一样传递它们。 很酷吧？6
+
+启动Django开发服务器来测试修改好的 URLconf, 运行命令行 python manage.py runserver 。 (如果你让它一直运行也可以，开发服务器会自动监测代码改动并自动重新载入，所以不需要手工重启） 开发服务器的地址是 http://127.0.0.1:8000/ ，打开你的浏览器访问 http://127.0.0.1:8000/hello/ 。 你就可以看到输出结果了。 开发服务器将自动检测Python代码的更改来做必要的重新加载， 所以你不需要重启Server在代码更改之后。服务器运行地址`` http://127.0.0.1:8000/`` ，所以打开浏览器直接输入`` http://127.0.0.1:8000/hello/`` ，你将看到由你的Django视图输出的Hello world。19
+
+万岁！ 你已经创建了第一个Django的web页面。5
+
+正则表达式

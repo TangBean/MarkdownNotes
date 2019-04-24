@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>三小时入门Django Web框架</title>
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container page-header">
+    <h1>文章标题1
+    </h1>
+</div>
+<div class="container body-main">
+    <div>
+        <p>
+            在有些场合，需要对Django处理的每个request都执行某段代码。 这类代码可能是在view处理之前修改传入的request，或者记录日志信息以便于调试，等等。2
+
+            这类功能可以用Django的中间件框架来实现，该框架由切入到Django的request/response处理过程中的钩子集合组成。
+            每个中间件组件都用于某个特定的功能。 如果你是顺着这本书读下来的话，你应该已经多次见到“中间件”了
+
+            第12章中所有的session和user工具都籍由一小簇中间件实现(例如，由中间件设定view中可见的 request.session 和 request.user )。
+
+            第13章讨论的站点范围cache实际上也是由一个中间件实现，一旦该中间件发现与view相应的response已在缓存中，就不再调用对应的view函数。
+
+            第14章所介绍的 flatpages , redirects , 和 csrf
+            等应用也都是通过中间件组件来完成其魔法般的功能。这个轻量级低层次的plug-in系统，能用于全面的修改Django的输入和输出。1
+
+        </p>
+        <p>
+            每个中间件组件都用于某个特定的功能。 如果你是顺着这本书读下来的话，你应该已经多次见到“中间件”了
+
+            第12章中所有的session和user工具都籍由一小簇中间件实现(例如，由中间件设定view中可见的 request.session 和 request.user )。
+
+            第13章讨论的站点范围cache实际上也是由一个中间件实现，一旦该中间件发现与view相应的response已在缓存中，就不再调用对应的view函数。
+
+            第14章所介绍的 flatpages , redirects , 和 csrf 等应用也都是通过中间件组件来完成其魔法般的功能。
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

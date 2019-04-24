@@ -1,0 +1,37 @@
+对于某一类网站， 管理界面 是基础设施中非常重要的一部分。 这是以网页和有限的可信任管理者为基础的界面，它可以让你添加，编辑和删除网站内容。 一些常见的例子： 你可以用这个界面发布博客，后台的网站管理者用它来润色读者提交的内容，你的客户用你给他们建立的界面工具更新新闻并发布在网站上，这些都是使用管理界面的例子。8
+
+但是管理界面有一问题： 创建它太繁琐。 当你开发对公众的功能时，网页开发是有趣的，但是创建管理界面通常是千篇一律的。 你必须认证用户，显示并管理表格，验证输入的有效性诸如此类。 这很繁琐而且是重复劳动。
+
+Django 在对这些繁琐和重复的工作进行了哪些改进？ 它用不能再少的代码为你做了所有的一切。 Django 中创建管理界面已经不是问题。1
+
+这一章是关于 Django 的自动管理界面。 这个特性是这样起作用的： 它读取你模式中的元数据，然后提供给你一个强大而且可以使用的界面，网站管理者可以用它立即工作。4
+
+请注意我们建议你读这章，即使你不打算用admin。因为我们将介绍一些概念，这些概念可以应用到Django的所有方面，而不仅仅是admin
+
+django.contrib 包
+Django自动管理工具是django.contrib的一部分。django.contrib是一套庞大的功能集，它是Django基本代码的组成部分，Django框架就是由众多包含附加组件(add-on)的基本代码构成的。 你可以把django.contrib看作是可选的Python标准库或普遍模式的实际实现。 它们与Django捆绑在一起，这样你在开发中就不用“重复发明轮子”了。6
+
+管理工具是本书讲述django.contrib的第一个部分。从技术层面上讲，它被称作django.contrib.admin。django.contrib中其它可用的特性，如用户鉴别系统(django.contrib.auth)、支持匿名会话(django.contrib.sessioins)以及用户评注系统(django.contrib.comments)。这些，我们将在第十六章详细讨论。在成为一个Django专家以前，你将会知道更多django.contrib的特性。 目前，你只需要知道Django自带很多优秀的附加组件，它们都存在于django.contrib包里。9
+
+激活管理界面4
+Django管理站点完全是可选择的，因为仅仅某些特殊类型的站点才需要这些功能。 这意味着你需要在你的项目中花费几个步骤去激活它。
+
+第一步，对你的settings文件做如下这些改变：13
+
+将'django.contrib.admin'加入setting的INSTALLED_APPS配置中 （INSTALLED_APPS中的配置顺序是没有关系的, 但是我们喜欢保持一定顺序以方便人来阅读）
+
+保证INSTALLED_APPS中包含'django.contrib.auth'，'django.contrib.contenttypes'和'django.contrib.sessions'，Django的管理工具需要这3个包。 (如果你跟随本文制作mysite项目的话，那么请注意我们在第五章的时候把这三项INSTALLED_APPS条目注释了。现在，请把注释取消。)3
+
+确保MIDDLEWARE_CLASSES 包含'django.middleware.common.CommonMiddleware' 、'django.contrib.sessions.middleware.SessionMiddleware' 和'django.contrib.auth.middleware.AuthenticationMiddleware' 。(再次提醒，如果有跟着做mysite的话，请把在第五章做的注释取消。)8
+
+运行 python manage.py syncdb 。这一步将生成管理界面使用的额外数据库表。 当你把'django.contrib.auth'加进INSTALLED_APPS后，第一次运行syncdb命令时, 系统会请你创建一个超级用户。 如果你不这么作，你需要运行python manage.py createsuperuser来另外创建一个admin的用户帐号，否则你将不能登入admin (提醒一句: 只有当INSTALLED_APPS包含'django.contrib.auth'时，python manage.py createsuperuser这个命令才可用.)28
+
+第三，将admin访问配置在URLconf(记住，在urls.py中). 默认情况下，命令django-admin.py startproject生成的文件urls.py是将Django admin的路径注释掉的，你所要做的就是取消注释。 请注意，以下内容是必须确保存在的：
+
+这个页面允许你修改用户的属性，如姓名和权限。 （如果要更改用户密码，你必须点击密码字段下的change password form，而不是直接更改字段值中的哈西码。）另外需要注意的是，不同类型的字段会用不同的窗口控件显示。例如，日期/时间型用日历控件，布尔型用复选框，字符型用简单文本框显示。6
+
+你可以通过点击编辑页面下方的删除按钮来删除一条记录。 你会见到一个确认页面。有时候，它会显示有哪些关联的对象将会一并被删除。 （例如，如果你要删除一个出版社，它下面所有的图书也将被删除。）
+
+你可以通过点击管理主页面中某个对象的Add来添加一条新记录。 一个空白记录的页面将被打开，等待你填充。1
+
+你还能看到管理界面也控制着你输入的有效性。 你可以试试不填必需的栏目或者在时间栏里填错误的时间，你会发现当你要保存时会出现错误信息，如图6-5所示。
