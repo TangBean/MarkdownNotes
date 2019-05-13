@@ -211,7 +211,12 @@ docker build -t="username/imagename:tag" .
 
 当我们基于一个 Image build 一个新的 Image 时，其实我们是先将 FROM 的那个 Image run 起来，然后在这个临时的 Container 运行我们在 Dockerfile 中写的各种命令，然后在将新的 Container commit 成一个 Image，再将临时的 Container 删掉。
 
-本质上来讲，`docker build` 就是 `docker run` + `docker commit` + `docker rm` 的究极集合体。
+本质上来讲，`docker build` 的过程就是 `docker run` + `docker commit` + `docker rm` 的究极集合体，一个 Dockerfile 的执行过程如下：
+
+- 基于刚提交的镜像运行一个新的容器；
+- 在这个新容器中继续执行指令；
+- 对容器进行修改，再把修改后的容器提交为一个新的镜像层；
+- 循环以上过程，直到 Dockerfile 中的所有指令执行完毕。
 
 
 
@@ -221,16 +226,109 @@ docker build -t="username/imagename:tag" .
 
 ### 关键字
 
-| 关键字               | 说明                                                         |
-| -------------------- | ------------------------------------------------------------ |
-| `FROM`               | 基于哪个 Image 构建，如果不基于任何 Image 就写 scratch       |
-| `LABEL`              | 就像代码中的注释，e.g. `LABEL description="This is description"` |
-| `RUN`                | 运行命令，为了美观，可以一个 RUN 后面跟一堆要运行的命令，命令与命令之间通过 `&&` 连接，可以通过 `\` 来换行，以方便阅读 |
-| `WORKDIR`            | 像 `cd` 一样，改变工作的目录，不过和 `cd` 不同的是，如果这个目录不存在，会创建这个目录并进入。所以我们要使用 `WORKDIR` 而不是 `RUN cd`，此外，尽量使用绝对路径，不要使用相对路径 |
-| `ADD` & `COPY`       | `ADD hello.py /`，`copy hello.py test/`，`ADD` 还有解压的功能，不过一般优先使用 `COPY`。这两个关键字都是对于添加本地文件进 Container 的，如果要添加远程文件，请使用 `curl` or `wget` |
-| `ENV`                | 设置常量，例如：`ENV MYSQL_VERSION 5.6`，之后可以通过 `${MYSQL_VERSION}` 来使用这个常量。十分推荐使用 `ENV` 来提高 Dockerfile 的可维护性。 |
-| `VOLUME` & `EXPOSE`  | 存储和网络                                                   |
-| `CMD` & `ENTERPOINT` | 后面讲                                                       |
+| 关键字         | 说明                                                         |
+| -------------- | ------------------------------------------------------------ |
+| `FROM`         | 基于哪个 Image 构建，如果不基于任何 Image 就写 scratch       |
+| `LABEL`        | 就像代码中的注释，e.g. `LABEL description="This is description"` |
+| `RUN`          | 执行命令并创建新的 Image Layer，为了美观，可以一个 RUN 后面跟一堆要运行的命令，命令与命令之间通过 `&&` 连接，可以通过 `\` 来换行，以方便阅读 |
+| `CMD`          | 设置容器启动后默认执行的命令和参数                           |
+| `ENTRYPOINT`   | 设置容器启动时运行的命令                                     |
+| `WORKDIR`      | 像 `cd` 一样，改变工作的目录，不过和 `cd` 不同的是，如果这个目录不存在，会创建这个目录并进入。所以我们要使用 `WORKDIR` 而不是 `RUN cd`，此外，尽量使用绝对路径，不要使用相对路径 |
+| `ADD` & `COPY` | `ADD hello.py /`，`copy hello.py test/`，`ADD` 还有解压的功能，不过一般优先使用 `COPY`。这两个关键字都是对于添加本地文件进 Container 的，如果要添加远程文件，请使用 `curl` or `wget` |
+| `ENV`          | 设置常量，例如：`ENV MYSQL_VERSION 5.6`，之后可以通过 `${MYSQL_VERSION}` 来使用这个常量。十分推荐使用 `ENV` 来提高 Dockerfile 的可维护性。 |
+| `EXPOSE`       | 暴露端口                                                     |
+| `VOLUME`       |                                                              |
+
+### Shell 和 Exec 格式
+
+#### Shell 格式
+
+```dockerfile
+RUN apt-get install -y vim
+CMD echo "hello docker"
+ENTRYPOINT echo "hello docker"
+```
+
+#### Exec 格式
+
+```dockerfile
+RUN ["apt-get", "install", "-y", "vim"]
+CMD ["/bin/echo", "hello docker"]
+ENTRYPOINT ["/bin/bash", "-c", "/bin/echo hello docker"]
+```
+
+就是执行命令，所以如果想在 shell 中执行要这样：
+
+```dockerfile
+FROM ubuntu
+ENV name Docker
+ENTRYPOINT ["/bin/bash", "-c", "/bin/echo hello ${name}"]  # 要加上 "/bin/bash", "-c"，并且是以数组的格式
+```
+
+### RUN、CMD、ENTRYPOINT 命令
+
+- **RUN 命令：**
+
+	- 执行命令并创建新的 Image Layer。
+
+- **CMD 命令：**
+
+	- 容器启动时默认执行的命令；
+	- 如果 `docker run -it [image] /bin/bash`，即在运行 `docker run` 时指定了其他命令， CMD 命令会被忽略，也就是说，Dockerfile 中只能指定一条 CMD 指令；
+	- 如果定义了多个 CMD，只有最后一个会执行。
+
+- **ENTRYPOINT 命令：(常用)**
+
+	- 让容器以应用程序或服务的形式运行；
+
+	- 不会被忽略，一定会执行，实际上，`docker run` 命令行中指定的任何参数都会被当做参数再次传递给 ENTRYPOINT 指令中指定的指令：
+
+	- 最佳实践：写一个 shell 脚本作为 ENTRYPOINT 的执行内容：
+
+		```dockerfile
+		COPY docker-entrypoint.sh /usr/local/bin/
+		ENTRYPOINT ["docker-entrypoint.sh"]  # 将 docker-entrypoint.sh 作为一个启动脚本
+		```
+
+>**巧妙的组合 ENTRYPOINT 和 CMD 来完成指定默认参数的工作**
+>
+>```dockerfile
+>FROM ubuntu
+>ENTRYPOINT ["/usr/bin/head"]
+>CMD ["/etc/passwd"]  # 默认参数，如果 docker run 时不带参数就是将这个参数传入 ENTRYPOINT 的命令中
+>```
+>
+>运行效果：
+>
+>```shell
+>$ docker run tangbean/ubuntu-entrypoint-exec /etc/group
+># 输出：
+>root:x:0:
+>daemon:x:1:
+>bin:x:2:
+>sys:x:3:
+>adm:x:4:
+>tty:x:5:
+>disk:x:6:
+>lp:x:7:
+>mail:x:8:
+>news:x:9:
+>
+>$ docker run tangbean/ubuntu-entrypoint-exec
+># 输出：
+>root:x:0:0:root:/root:/bin/bash
+>daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+>bin:x:2:2:bin:/bin:/usr/sbin/nologin
+>sys:x:3:3:sys:/dev:/usr/sbin/nologin
+>sync:x:4:65534:sync:/bin:/bin/sync
+>games:x:5:60:games:/usr/games:/usr/sbin/nologin
+>man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+>lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+>mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+>news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+>```
+
+
 
 参考：https://deepzz.com/post/dockerfile-reference.html
 
