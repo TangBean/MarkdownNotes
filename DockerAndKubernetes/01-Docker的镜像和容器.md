@@ -182,7 +182,7 @@ docker container ls -a | awk {'print$1'}
 ```shell
 # remove 所有的 Container
 docker rm $(docker ps -aq)
-# remove 退出的 Container
+# remove 所有退出的 Container
 docker rm $(docker ps -f "status=exited" -q)
 ```
 
@@ -290,7 +290,7 @@ ENTRYPOINT ["/bin/bash", "-c", "/bin/echo hello ${name}"]  # 要加上 "/bin/bas
 		ENTRYPOINT ["docker-entrypoint.sh"]  # 将 docker-entrypoint.sh 作为一个启动脚本
 		```
 
->**巧妙的组合 ENTRYPOINT 和 CMD 来完成指定默认参数的工作**
+>**巧妙的组合 ENTRYPOINT 和 CMD 来完成指定默认参数的工作！**
 >
 >```dockerfile
 >FROM ubuntu
@@ -328,7 +328,58 @@ ENTRYPOINT ["/bin/bash", "-c", "/bin/echo hello ${name}"]  # 要加上 "/bin/bas
 >news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
 >```
 
-
-
 参考：https://deepzz.com/post/dockerfile-reference.html
+
+
+
+## 实战：将一个 Python Flask 项目打包进 Docker
+
+项目超级的简单，代码如下：
+
+```python
+# app.py
+from flask import Flask
+app = Flask(__name__)
+@app.route('/')
+def hello():
+    return "hello docker"
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000)
+```
+
+创建 Dockerfile 如下：
+
+```dockerfile
+FROM python:2.7
+LABEL maintainer="Tang_Bean<tang_bean@163.com>"
+RUN pip install flask
+COPY app.py /app/
+WORKDIR /app
+EXPOSE 5000
+ENTRYPOINT ["python", "app.py"]
+```
+
+运行命令：
+
+```shell
+docker build -t "tangbean/flask-demo" .
+docker run -d -p 12345:5000 --name=nickname tangbean/flask-demo
+# -d 表示后台运行这个容器，--name=别名，可以当 CONTAINER ID 使
+# 访问 http://192.168.33.10:12345/
+```
+
+> 记得在虚拟机的 Vagrantfile 中打开：`config.vm.network "private_network", ip: "192.168.33.10"`。
+
+
+
+## 操作运行中的容器
+
+```shell
+# 进入到运行中的程序
+docker exec -it <CONTAINER ID> /bin/bash
+# 显示 docker container 的详细信息
+docker inspect <CONTAINER ID>
+# logs
+docker logs <CONTAINER ID>
+```
 
