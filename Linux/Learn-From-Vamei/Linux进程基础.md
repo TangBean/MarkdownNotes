@@ -53,10 +53,60 @@ fork 是一个系统调用，每个进程都在内存中分配有属于自己的
 
 
 
+## Linux 下的特殊进程
+
+Linux 下有 3 个特殊进程：
+
+- idle 进程（PID = 0）
+	- 由系统自动创建，运行在内核态，其前身是系统创建的第一个进程；
+	- 是唯一一个没有通过 fork 或 kernel_thread 产生的进程。
+- init 进程（PID = 1）
+	- 由 idle 进程通过 kernel_thread 创建，是系统中所有其他用户的祖先进程；
+	- Linux 中的所有进程都是由 init 进程创建并运行的；
+	- 系统启动完成后，init 进程将变为守护进程，监视其他进程。
+- kthreadd 进程（PID = 2）
+	- 由 idle 通过 kernel_thread 创建，并始终运行在内核空间，负责所有内核线程的调度和管理；
+	- 它的任务就是管理和调度其他内核线程 kernel_thread，会循环执行一个 kthread 的函数，该函数的作用就是运行 kthread_create_list 全局链表中维护的 kthread，我们调用 kernel_thread 创建的内核线程会被加入到此链表中，因此所有的内核线程都是直接或者间接的以 kthreadd 为父进程
+
+### init 进程
+
+是 Linux 内核开始建立起进程概念时第一个通过 kernel_thread 产生的进程，其开始在内核态执行，然后通过一个系统调用，开始执行用户空间的 /sbin/init 程序，其间，Linux 内核也经历了从内核态到用户态的特权级转变，/sbin/init 极有可能产生出了shell，然后所有的用户进程都由该进程派生出来。
+
+0 号进程创建 1 号进程的方式如下：
+
+```c
+kernel_thread(kernel_init, NULL, CLONE_FS);
+```
+
+随后，1 号进程调用 do_execve 运行可执行程序 init，并演变成用户态 1 号进程，即 init 进程。
+
+init 进程是 linux 内核启动的第一个用户级进程。init 有许多很重要的任务，比如像启动 getty（用于用户登录）、实现运行级别、以及处理孤立进程等。
+
+
+
+## 僵尸进程
+
+一个子进程在其父进程还没有调用 wait() 或 waitpid() 的情况下退出。这个子进程就是僵尸进程。
+
+**产生僵尸进程的原因：**
+
+- 子进程结束后向父进程发出 SIGCHLD 信号，父进程默认忽略了它；
+- 父进程没有调用 wait() 或 waitpid() 函数来等待子进程的结束。
+
+**处理办法：**
+
+- 把父进程杀掉，僵尸进程会变成孤儿进程，然后过继给1号进程，而1号进程会扫描名下子进程，把 Z 状态进程回收；
+
+
+
 ## 线程与进程
 
 在 Linux 中，线程只是一种特殊的进程。多个线程之间可以共享内存空间和 IO 接口。所以，进程是 Linux 程序的唯一的实现方式。
 
 
 
-参考：https://www.cnblogs.com/vamei/archive/2012/09/20/2694466.html
+参考：
+
+- [Linux进程基础](https://www.cnblogs.com/vamei/archive/2012/09/20/2694466.html)
+- [Linux下1号进程的前世(kernel_init)今生(init进程)----Linux进程的管理与调度（六）](https://blog.csdn.net/gatieme/article/details/51532804)
+- 
