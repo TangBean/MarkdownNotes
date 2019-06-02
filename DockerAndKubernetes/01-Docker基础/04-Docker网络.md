@@ -2,7 +2,147 @@
 
 
 
-## 集线器、网桥、交换机都是啥？
+## docker network 常用命令
+
+- `docker network ls`
+	- 列出运行在本地 Docker 主机上的全部网络
+- `docker network create`
+	- 创建新的 Docker 网络，可以使用 `-d` 参数指定驱动（网络类型）
+		- `-d bridge`：默认选择，单机桥接网络
+		- `-d overlay`：创建覆盖网络，适用于多机器间的 Docker 通信
+		- `-d host`：没有独立的 network namespace，和容器所在的主机共用一个
+		- `-d none`：一座孤岛，和谁都不连
+- `docker network inspect`
+	- 查看通过 create 创建的 Docker 网络的详细配置信息
+- `docker network prune`
+	- 删除 Docker 主机上全部未使用的网络
+- `docker network rm`
+	- 删除 Docker 主机上指定网络
+
+
+
+## 详细介绍：单机桥接网络
+
+单机桥接网络是最简单的 Docker 网络，从名字可以将它分为 “单机” 和 “桥接” 这两部分来理解：
+
+- 单机：该网络只能在单个 Docker 主机上运行，并且只能用于该网络所在的主机上的容器间的通信；
+- 桥接：这是一种 802.1.d 桥接的一种实现（二层交换机）。
+
+每个 Docker 主机都有一个默认的单机桥接网络：docker0，我们在一个 Docker 主机上运行 `ip a` 会看到：
+
+```shell
+$ ip a
+...
+4: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default
+    link/ether 02:42:66:37:79:bf brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+```
+
+除非我们在创建容器时通过 `--network` 指定连接的网络，否则新创建的容器都会默认连接到 docker0 这个网络上。
+
+一般我们在一台没有自己新建过网络的 Docker 主机上运行 ls 命令会有如下效果：
+
+```shell
+$ docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+a1d3bf85341f        bridge              bridge              local
+78ab8e16674b        host                host                local
+276fb2cb0454        none                null                local
+```
+
+也就是说，默认情况下，Docker 主机会默认创建 bridge，host 和 none 这三种类型的网络。
+
+在 Linux 主机上，Docker 网络是由 Bridge 驱动创建的，而 Bridge 底层是基于 Linux 内核中的 Linux Bridge 技术的，所以除了 Docker 提供给我们的命令以外，我们还可以通过标准的 Linux 工具来查看这些网络，例如：
+
+```shell
+$ ip link show docker0
+4: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DEFAULT group default
+    link/ether 02:42:66:37:79:bf brd ff:ff:ff:ff:ff:ff
+```
+
+### 自己创建一个 bridge 网络
+
+创建一个新的网络的命令如下：
+
+```shell
+# -d: Driver String: Driver to manage the network (Default "bridge")
+$ docker network create -d bridge localnet
+c50345e2009a6473a22ba0a04f3aaf8334becba35ed766f2a1343238041950f2
+```
+
+除了使用 Docker network 系的命令，其实我们还可以使用 Linux brctl 工具来查看系统中的 Linux 网桥，`brctl` 并不是自带命令，所以在使用前我们需要先安装一下：`sudo apt-get install bridge-utils`。
+
+使用 `brctl` 查看 Linux Bridge 的方式如下：
+
+```shell
+$ brctl show
+bridge name     bridge id               STP enabled     interfaces
+br-c50345e2009a         8000.02425c4aa81a       no                 # 这个就是我们新建的网桥
+docker0         8000.0242663779bf       no
+```
+
+可以看到，目前两个网桥都没有任何设备接入，所以 interface 列表是空的。接下来，我们新建 c1 和 c2 两个容器来测试一下我们的新网桥：
+
+```shell
+# 创建后台运行的容器 c1
+$ docker run -d --name c1 \
+  --network localnet \
+  alpine sleep 1d
+16f84983126ac934499a28712209fec2a94acd559c89185985ede81372dfc21f
+
+# 创建容器 c2 并进入到 c2 中
+$ docker run -it --name c2 \
+  --network localnet \
+  alpine sh
+
+# 在 c2 中 ping c1
+$ ping c1
+PING c1 (172.18.0.2): 56 data bytes
+64 bytes from 172.18.0.2: seq=0 ttl=64 time=0.118 ms
+64 bytes from 172.18.0.2: seq=1 ttl=64 time=0.391 ms
+64 bytes from 172.18.0.2: seq=2 ttl=64 time=0.639 ms
+^C
+--- c1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss  # 可以 ping 通！
+round-trip min/avg/max = 0.118/0.382/0.639 ms
+```
+
+**为什么我们直接通过 name 就可以 ping 通呢？**
+
+因为在相同网络中继续接入新的容器时，新的容器都会被注册到指定的 Docker DNS 服务，所以相同网络中的容器可以解析其他容器的名称。
+
+**端口映射**
+
+端口映射允许将某个容器端口映射到 Docker 主机端口上，此后，对于配置中指定的 Docker 主机端口，任何发送到改端口的流量，都会被转发到容器。
+
+```shell
+$ docker run -d --name web \
+  --network localnet \
+  --publish 5000:80 \
+  nginx
+  
+# 确认容器的端口映射情况
+$ docker port web
+```
+
+
+
+## 服务发现
+
+服务发现允许容器和 Swarm 服务通过名称相互定位。只要它们是在同一个网络中。
+
+其底层实现是利用了 Docker 内置的 DNS 服务器，为每个容器提供 DNS 解析功能，例如，容器 c1 `ping c2` 的过程如下：
+
+- `ping c2` 命令调用本地 DNS 解析器，尝试将 “c2” 解析为具体的 IP 地址；
+- 如果在本地的 DNS 解析器的缓存中没有找到与 “c2” 对应的 IP 地址，本地的 DNS 解析器会向 Docker DNS 解析器发起一个递归查询；
+- Docker DNS 记录了全部容器和 IP 地址的映射关系；
+- Docker DNS 服务返回 “c2” 对应的 IP 地址到 “c1” 本地 DNS 解析器；
+- `ping` 命令被发往 “c2” 对应的 IP 地址。
+
+
+
+## 补充：集线器、网桥、交换机都是啥？
 
 参考：https://www.cnblogs.com/hyddd/archive/2009/01/18/NetWorking.html
 
@@ -82,8 +222,6 @@
 首先我们要知道，网桥不是用来连接不同的网段的，不同网段之间通信，是需要网关的帮助的，一般是路由器这类网络层的设备完成的。而网桥和交换机是链路层设备，网段这个是和 IP 相关的概念，属于网络层。网桥和交换机跟本无能力去处理网络层的东西！
 
 网桥连接的仅仅是两个子局域网，并且这里说的子局域网必须是同构的（同构的意思是：如果是以太网，那么网桥连接的两个子网都必须是以太网，不能一个是以太网一个是令牌网）。
-
-
 
 
 
