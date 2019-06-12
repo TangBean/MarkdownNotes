@@ -363,6 +363,48 @@ for n in g:
 
 ## 面向对象
 
+类和对象是面向对象的两个重要的概念，类是客观世界中事物的抽象，对象是类实例化后的实体。
+
+Python 类中有许多的内置类属性：
+
+| 属性         | 作用                       |
+| ------------ | -------------------------- |
+| `__dict__`   | 一个字典，包含类的所有属性 |
+| `__mro__`    | 方法解释顺序元组           |
+| `__base__`   | 一个由所有父类组成的元组   |
+| `__name__`   | 类名                       |
+| `__doc__`    | 文档字符串                 |
+| `__module__` | 类定义所在的模块           |
+
+Python 的 `toString()` 方法：`__str__` 和 `__repr__`
+
+property 装饰器：
+
+```python
+class Person():
+    def __init__(self, name, age):
+        self.name = name
+        self._age = age
+
+    @property
+    def age(self):
+        return self._age
+
+    @age.setter
+    def age(self, age):
+        if 0 < age <= 100:
+            self._age = age
+        else:
+            print('age 有问题啊有问题')
+
+
+p = Person('Hello', 3)
+p.age = 22
+print(p.age)  # 22
+
+p.age = 200  # age 有问题啊有问题
+```
+
 
 
 
