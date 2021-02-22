@@ -22,5 +22,5 @@ PS. 因为要上班写码的，没办法天天在群里划水，所以可能无�
 
 PPS. 对于2021年即将毕业的同学，如果你去年错过了秋招或是对已拿到的offer还不太满意，我们十分欢迎，不过只针对工程开发岗（Java/C++）
 
-![y7QMad.jpg](https://s3.ax1x.com/2021/02/22/y7QMad.jpg)](https://imgchr.com/i/y7QMad)
+[![y7llmF.md.jpg](https://s3.ax1x.com/2021/02/22/y7llmF.md.jpg)](https://imgchr.com/i/y7llmF)
 
